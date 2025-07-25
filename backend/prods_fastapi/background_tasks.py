@@ -38,14 +38,14 @@ try:
         
         if redis_password:
             if use_ssl:
-                redis_broker = RedisBroker(host=redis_host, port=redis_port, db=redis_db, password=redis_password, connection_kwargs={"ssl": True, "ssl_cert_reqs": None})
+                redis_broker = RedisBroker(host=redis_host, port=redis_port, db=redis_db, password=redis_password, connection_kwargs={"ssl_cert_reqs": None})
                 logger.info(f"Dramatiq broker configured with Redis at {redis_host}:{redis_port} (with auth + SSL)")
             else:
                 redis_broker = RedisBroker(host=redis_host, port=redis_port, db=redis_db, password=redis_password)
                 logger.info(f"Dramatiq broker configured with Redis at {redis_host}:{redis_port} (with auth)")
         else:
             if use_ssl:
-                redis_broker = RedisBroker(host=redis_host, port=redis_port, db=redis_db, connection_kwargs={"ssl": True, "ssl_cert_reqs": None})
+                redis_broker = RedisBroker(host=redis_host, port=redis_port, db=redis_db, connection_kwargs={"ssl_cert_reqs": None})
                 logger.info(f"Dramatiq broker configured with Redis at {redis_host}:{redis_port} (SSL only)")
             else:
                 redis_broker = RedisBroker(host=redis_host, port=redis_port, db=redis_db)

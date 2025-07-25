@@ -354,7 +354,7 @@ This document outlines Phase 1 basic improvements for the AI Fashion platform, f
 ### Phase 2 Preparation
 - Collect user feedback on Phase 1 improvements
 - Analyze performance metrics and user behavior
-- Plan advanced features (AR/VR, outfit recommendations)
+<!-- - Plan advanced features (AR/VR, outfit recommendations) -->
 - Infrastructure scaling considerations
 
 ### Monitoring & Maintenance

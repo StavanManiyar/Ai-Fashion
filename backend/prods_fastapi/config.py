@@ -59,6 +59,16 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 100
     rate_limit_burst: int = 200
     
+    # Additional environment variables
+    enable_background_tasks: bool = True
+    enable_caching: bool = True
+    enable_monitoring: bool = True
+    environment: str = "development"
+    pythonpath: str = "/app"
+    pythonunbuffered: int = 1
+    redis_password: str = ""
+    secret_key: str = "your-secret-key-here"
+    
     # Security settings
     cors_origins: List[str] = [
         "https://*.render.com",
@@ -208,8 +218,8 @@ MONITORING_CONFIG = {
 FEATURE_FLAGS = {
     "enable_ab_testing": True,
     "enable_advanced_recommendations": True,
-    "enable_background_processing": True,
-    "enable_caching": True,
+    "enable_background_processing": settings.enable_background_tasks,
+    "enable_caching": settings.enable_caching,
     "enable_rate_limiting": settings.enable_rate_limiting,
     "enable_metrics": settings.enable_metrics,
     "enable_health_checks": True,

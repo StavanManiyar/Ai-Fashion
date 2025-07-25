@@ -14,11 +14,13 @@ import asyncio
 from datetime import timedelta
 import os
 
-# Import aioredis directly
+# Import redis with async support (redis-py 4.0+)
 try:
-    import aioredis
+    import redis.asyncio as redis_async
+    ASYNC_REDIS_AVAILABLE = True
 except ImportError:
-    aioredis = None
+    redis_async = None
+    ASYNC_REDIS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +56,6 @@ class CacheManager:
             
             # Add SSL configuration if using rediss://
             if REDIS_URL.startswith("rediss://"):
-                connection_kwargs["ssl"] = True
                 connection_kwargs["ssl_cert_reqs"] = None
             
             self.redis_client = redis.from_url(REDIS_URL, **connection_kwargs)
@@ -72,17 +73,29 @@ class CacheManager:
     
     async def get_async_redis(self):
         """Get async Redis connection"""
-        if not aioredis:
-            logger.warning("aioredis not available, async operations will be skipped")
+        if not ASYNC_REDIS_AVAILABLE:
+            logger.warning("redis async not available, async operations will be skipped")
             return None
             
         if self.async_redis is None:
             try:
-                self.async_redis = await aioredis.from_url(
-                    REDIS_URL,
-                    max_connections=REDIS_MAX_CONNECTIONS,
-                    decode_responses=False
-                )
+                # Connection kwargs for async client
+                connection_kwargs = {
+                    "max_connections": REDIS_MAX_CONNECTIONS,
+                    "decode_responses": False,
+                    "socket_timeout": 5,
+                    "socket_connect_timeout": 5,
+                    "retry_on_timeout": True
+                }
+                
+                # Add SSL configuration if using rediss://
+                if REDIS_URL.startswith("rediss://"):
+                    connection_kwargs["ssl_cert_reqs"] = None
+                
+                self.async_redis = redis_async.from_url(REDIS_URL, **connection_kwargs)
+                
+                # Test connection
+                await self.async_redis.ping()
                 logger.info("Async Redis connection established")
             except Exception as e:
                 logger.error(f"Failed to connect to async Redis: {e}")
