@@ -19,11 +19,72 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: Implement actual authentication
-    setTimeout(() => {
+    
+    try {
+      // Basic validation
+      if (isSignup && !formData.name.trim()) {
+        alert('Please enter your full name');
+        setLoading(false);
+        return;
+      }
+      
+      if (!formData.email.trim() || !formData.password.trim()) {
+        alert('Please fill in all required fields');
+        setLoading(false);
+        return;
+      }
+      
+      // Simple email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        alert('Please enter a valid email address');
+        setLoading(false);
+        return;
+      }
+      
+      // Password validation
+      if (formData.password.length < 6) {
+        alert('Password must be at least 6 characters long');
+        setLoading(false);
+        return;
+      }
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (isSignup) {
+        // Store user data in localStorage (for demo purposes)
+        const userData = {
+          name: formData.name,
+          email: formData.email,
+          createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('fashionAI_user', JSON.stringify(userData));
+        localStorage.setItem('fashionAI_isAuthenticated', 'true');
+        alert('Account created successfully! Welcome to Fashion AI!');
+      } else {
+        // Check if user exists (for demo purposes)
+        const existingUser = localStorage.getItem('fashionAI_user');
+        if (existingUser) {
+          localStorage.setItem('fashionAI_isAuthenticated', 'true');
+          alert('Welcome back!');
+        } else {
+          alert('Account not found. Please sign up first.');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Reset form
+      setFormData({ name: '', email: '', password: '' });
       setLoading(false);
       onClose();
-    }, 1000);
+      
+    } catch (error) {
+      console.error('Authentication error:', error);
+      alert('An error occurred. Please try again.');
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,7 +129,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
           {/* Social Login Buttons */}
           <div className="space-y-3 mb-6">
-            <button className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => alert('Google authentication will be implemented in a future update')}
+              className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -78,7 +141,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               Continue with Google
             </button>
             
-            <button className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+            <button 
+              onClick={() => alert('GitHub authentication will be implemented in a future update')}
+              className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
               <Github className="w-5 h-5 mr-2" />
               Continue with GitHub
             </button>

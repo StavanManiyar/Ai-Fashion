@@ -50,12 +50,29 @@ const DemoTryOn = () => {
 
     const analysisData = sessionStorage.getItem('skinAnalysis');
     if (analysisData) {
-      const parsedData = JSON.parse(analysisData) as SkinAnalysisResult;
-      setSkinAnalysis(parsedData);
-      
-      if (parsedData?.monk_hex) {
-        const recommendations = getRecommendedColors(parsedData.monk_hex);
-        setColorRecommendations(recommendations);
+      try {
+        const parsedData = JSON.parse(analysisData);
+        
+        // Handle both array format [result, hex] and object format
+        let analysisResult: SkinAnalysisResult;
+        if (Array.isArray(parsedData)) {
+          analysisResult = parsedData[0] as SkinAnalysisResult;
+        } else {
+          analysisResult = parsedData as SkinAnalysisResult;
+        }
+        
+        setSkinAnalysis(analysisResult);
+        
+        // Get color recommendations if monk_hex exists
+        if (analysisResult?.monk_hex) {
+          const recommendations = getRecommendedColors(analysisResult.monk_hex);
+          setColorRecommendations(recommendations);
+        }
+      } catch (error) {
+        console.error('Error parsing skin analysis data:', error);
+        // Clear corrupted data and redirect
+        sessionStorage.removeItem('skinAnalysis');
+        setSkinAnalysis(null);
       }
     }
   }, [navigate]);
@@ -98,8 +115,35 @@ const DemoTryOn = () => {
     return makeupPalettes[skinToneCategory];
   };
 
-  // Get makeup colors based on skin analysis
-  const makeupColors = skinAnalysis ? getMakeupColors(skinAnalysis.monk_skin_tone.replace('Monk', '').replace('monk', '')) : null;
+  // Get makeup colors based on skin analysis with better error handling
+  const makeupColors = React.useMemo(() => {
+    if (!skinAnalysis || !skinAnalysis.monk_skin_tone) {
+      // Provide fallback colors for demo purposes
+      return {
+        foundation: ['#FFE0BD', '#FFD1A1', '#FFC183', '#FFDEB3', '#FFE4C4'],
+        blush: ['#FFB6C1', '#FF69B4', '#DB7093', '#FFC0CB', '#FFE4E1'],
+        lipstick: ['#FF1493', '#FF69B4', '#DC143C', '#FF4500', '#FF6B6B'],
+        eyeshadow: ['#DDA0DD', '#DA70D6', '#BA55D3', '#9370DB', '#8B008B'],
+        eyeliner: ['#2F4F4F', '#4B0082', '#800000', '#8B4513', '#000000']
+      };
+    }
+    
+    try {
+      // Extract numeric part from monk_skin_tone (e.g., "Monk05" -> "05" -> "5")
+      const monkScale = skinAnalysis.monk_skin_tone.replace(/[^0-9]/g, '');
+      return getMakeupColors(monkScale);
+    } catch (error) {
+      console.error('Error processing monk skin tone:', error);
+      // Return medium tone colors as fallback
+      return {
+        foundation: ['#DEB887', '#D2B48C', '#CD853F', '#BC8F8F', '#F4A460'],
+        blush: ['#E9967A', '#FF7F50', '#FF6347', '#CD5C5C', '#DC143C'],
+        lipstick: ['#8B0000', '#800000', '#B22222', '#DC143C', '#FF4500'],
+        eyeshadow: ['#8B4513', '#A0522D', '#6B4423', '#8B008B', '#4B0082'],
+        eyeliner: ['#2F4F4F', '#000000', '#8B4513', '#4A0404', '#1A1A1A']
+      };
+    }
+  }, [skinAnalysis]);
 
   const categories: CategoryType[] = makeupColors ? [
     {

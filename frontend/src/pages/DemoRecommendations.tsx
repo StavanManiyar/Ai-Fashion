@@ -4,7 +4,9 @@ import Layout from '../components/Layout';
 import { Star, Sparkles, Crown, Shirt, Palette } from 'lucide-react';
 import ProductRecommendations from '../components/ProductRecommendations';
 import FeedbackPopup from '../components/FeedbackPopup';
+import ColorAnalysis from '../components/ColorAnalysis';
 import { API_ENDPOINTS, buildApiUrl } from '../config/api';
+import { formatDetectedSkinTone } from '../utils/colorApi';
 
 // Consolidated interfaces
 interface Product {
@@ -343,12 +345,21 @@ const DemoRecommendations = () => {
       if (storedAnalysis) {
         const analysisArray = JSON.parse(storedAnalysis);
         if (analysisArray && analysisArray.length >= 2) {
-          setSkinAnalysis(analysisArray[0]);
-          setSkinHex(analysisArray[1]);
-          
-          // Determine Monk skin tone from hex color
+          const analysisResult = analysisArray[0];
           const hexColor = analysisArray[1];
-          const monkId = determineMonkSkinTone(hexColor);
+          
+          setSkinAnalysis(analysisResult);
+          setSkinHex(hexColor);
+          
+          // Use backend-provided monk_skin_tone if available, otherwise calculate from hex
+          let monkId;
+          if (analysisResult && analysisResult.monk_skin_tone) {
+            monkId = analysisResult.monk_skin_tone;
+            console.log('Using backend-provided Monk skin tone:', monkId);
+          } else {
+            monkId = determineMonkSkinTone(hexColor);
+            console.log('Calculated Monk skin tone from hex:', monkId);
+          }
           setMonkSkinTone(monkId);
         }
       }
@@ -708,73 +719,17 @@ const DemoRecommendations = () => {
                   </div>
                 </div>
               ) : (
-                // Color Palettes Tab - Simplified to only show colors that suit
+                // Color Palettes Tab - Using enhanced ColorAnalysis component
                 <div className="space-y-8">
-                  <div className="bg-white rounded-xl p-6 shadow-lg">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Color Recommendations</h2>
-                    <p className="text-gray-600 mb-6">
-                      Based on your skin tone, we've identified personalized color recommendations that will complement your natural complexion.
-                    </p>
-                    
-                    <div className="flex flex-col md:flex-row md:items-center mb-6 gap-4">
-                      <div 
-                        className="w-16 h-16 rounded-full shadow-md"
-                        style={{ backgroundColor: skinHex }}
-                      />
-                      <div>
-                        <h3 className="text-lg font-semibold">Your Skin Tone</h3>
-                        <p className="text-gray-500">{skinHex}</p>
-                        {colorRecommendations?.seasonal_type && (
-                          <p className="text-purple-600 font-medium">{colorRecommendations.seasonal_type} Color Type</p>
-                        )}
-                        {colorRecommendations?.monk_skin_tone && (
-                          <p className="text-gray-600 text-sm">{colorRecommendations.monk_skin_tone}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Colors That Suit You */}
-                  {colorRecommendations && (
-                    <div className="bg-white rounded-xl p-6 shadow-lg">
-                      <div className="flex items-center mb-6">
-                        <Crown className="w-6 h-6 text-purple-600 mr-2" />
-                        <h2 className="text-xl font-bold text-gray-900">Your Color Palette</h2>
-                      </div>
-
-                      <div className="space-y-8">
-                        {/* Colors That Flatter You */}
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
-                            <Star className="w-5 h-5 text-yellow-500 mr-2" />
-                            Colors That Suit You
-                          </h3>
-                          
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                            {colorRecommendations.colors_that_suit.map((color) => (
-                              <div key={color.hex} className="bg-gray-50 p-3 rounded-lg hover:shadow-md transition-shadow">
-                                <div 
-                                  className="w-full h-16 rounded-lg shadow-md mb-2"
-                                  style={{ backgroundColor: color.hex }}
-                                />
-                                <span className="text-gray-700 text-sm font-medium block truncate" title={color.name}>
-                                  {color.name}
-                                </span>
-                                <span className="text-gray-500 text-xs">{color.hex}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        {/* Message about future updates */}
-                        {colorRecommendations.message && (
-                          <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                            <p className="text-purple-700 italic">{colorRecommendations.message}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <ColorAnalysis 
+                    skinToneId={monkSkinTone}
+                    detectedSkinTone={formatDetectedSkinTone({
+                      monk_skin_tone: monkSkinTone,
+                      monk_tone_display: monkSkinTone.replace('Monk0', 'Monk ').replace('Monk', 'Monk '),
+                      monk_hex: skinHex,
+                      derived_hex_code: skinHex
+                    })}
+                  />
                 </div>
               )}
             </>

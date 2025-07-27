@@ -64,7 +64,7 @@ const DemoProcess = () => {
       
       setSkinAnalysisResult(formattedResult);
       
-      // Store the result in sessionStorage for use in other components
+      // Store the result in sessionStorage as a single object for consistency
       sessionStorage.setItem('skinAnalysis', JSON.stringify(formattedResult));
       
       // Continue with navigation after analysis

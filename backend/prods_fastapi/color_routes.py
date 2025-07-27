@@ -1,6 +1,6 @@
 # Color routes for the Fashion AI backend
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
+from typing import List, Optional, Dict
 import psycopg2
 from pydantic import BaseModel
 
@@ -205,6 +205,96 @@ async def get_color_by_hex(hex_code: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching color: {e}")
+
+@color_router.get("/palette/{skin_tone_id}", response_model=Dict)
+async def get_color_palette(
+    skin_tone_id: str,
+    include_skin_tone: bool = Query(True, description="Include detected skin tone in response")
+):
+    """Get complete color palette for a detected skin tone including the skin tone itself"""
+    conn = connect_to_db()
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Get recommended colors
+        recommended_query = """
+        SELECT hex_code, color_name, suitable_skin_tone, seasonal_palette, category
+        FROM colors 
+        WHERE (suitable_skin_tone ILIKE %s OR seasonal_palette ILIKE %s)
+        AND category = 'recommended'
+        ORDER BY color_name
+        LIMIT 12;
+        """
+        
+        cursor.execute(recommended_query, (f'%{skin_tone_id}%', f'%{skin_tone_id}%'))
+        recommended_results = cursor.fetchall()
+        
+        # Get colors to avoid
+        avoid_query = """
+        SELECT hex_code, color_name, suitable_skin_tone, seasonal_palette, category
+        FROM colors 
+        WHERE (suitable_skin_tone ILIKE %s OR seasonal_palette ILIKE %s)
+        AND category = 'avoid'
+        ORDER BY color_name
+        LIMIT 8;
+        """
+        
+        cursor.execute(avoid_query, (f'%{skin_tone_id}%', f'%{skin_tone_id}%'))
+        avoid_results = cursor.fetchall()
+        
+        # Map skin tone ID to hex code
+        monk_skin_tones = {
+            'Monk01': '#f6ede4', 'Monk02': '#f3e7db', 'Monk03': '#f7ead0',
+            'Monk04': '#eadaba', 'Monk05': '#d7bd96', 'Monk06': '#a07e56',
+            'Monk07': '#825c43', 'Monk08': '#604134', 'Monk09': '#3a312a',
+            'Monk10': '#292420'
+        }
+        
+        recommended_colors = []
+        for row in recommended_results:
+            recommended_colors.append({
+                "hex_code": row[0],
+                "color_name": row[1],
+                "suitable_skin_tone": row[2],
+                "seasonal_palette": row[3],
+                "category": row[4]
+            })
+        
+        avoid_colors = []
+        for row in avoid_results:
+            avoid_colors.append({
+                "hex_code": row[0],
+                "color_name": row[1],
+                "suitable_skin_tone": row[2],
+                "seasonal_palette": row[3],
+                "category": row[4]
+            })
+        
+        response = {
+            "skin_tone_id": skin_tone_id,
+            "recommended_colors": recommended_colors,
+            "colors_to_avoid": avoid_colors,
+            "total_recommended": len(recommended_colors),
+            "total_avoid": len(avoid_colors)
+        }
+        
+        # Include detected skin tone if requested
+        if include_skin_tone and skin_tone_id in monk_skin_tones:
+            response["detected_skin_tone"] = {
+                "id": skin_tone_id,
+                "name": skin_tone_id.replace('Monk', 'Monk ').replace('0', ''),
+                "hex_code": monk_skin_tones[skin_tone_id],
+                "display_name": f"Your Detected Skin Tone ({skin_tone_id})"
+            }
+        
+        cursor.close()
+        conn.close()
+        
+        return response
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching color palette: {e}")
 
 @color_router.get("/all", response_model=List[ColorRecommendation])
 async def get_all_colors(
