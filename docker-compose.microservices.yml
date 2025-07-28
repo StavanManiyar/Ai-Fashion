@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Redis for caching and message broker
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - ai_fashion_network
+
+  # API Gateway (NGINX)
+  gateway:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - image-processing-service
+      - color-matching-service
+      - product-service
+    networks:
+      - ai_fashion_network
+
+  # Image Processing Service
+  image-processing-service:
+    build:
+      context: ./services/image-processing-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - ai_fashion_network
+    volumes:
+      - ./shared:/app/shared
+
+  # Color Matching Service
+  color-matching-service:
+    build:
+      context: ./services/color-matching-service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - ai_fashion_network
+
+  # Product Service
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - ai_fashion_network
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080/api
+    depends_on:
+      - gateway
+    networks:
+      - ai_fashion_network
+
+volumes:
+  redis_data:
+
+networks:
+  ai_fashion_network:
+    driver: bridge

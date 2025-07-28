@@ -1,0 +1,11 @@
+fastapi==0.116.1
+uvicorn==0.35.0
+pillow>=10.0.0
+opencv-python==4.10.0.84
+numpy==1.26.4
+aioredis==2.0.1
+pydantic==2.10.6
+python-multipart==0.0.12
+scikit-learn==1.7.1
+logging
+asyncio
